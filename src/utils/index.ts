@@ -59,7 +59,7 @@ export async function initializeTemplateSystem(): Promise<TemplateLoader>
     globalTemplateLoader.registry.register({
       name: 'media',
       source: async () => {
-        const res = await fetch('/templates/media.html')
+        const res = await fetch('./templates/media.html')
         return res.text()
       },
       metadata: {
