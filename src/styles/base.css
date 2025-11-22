@@ -1,0 +1,227 @@
+/**
+ * Base styles for Container Manager library
+ * These styles provide basic functionality and can be overridden
+ */
+
+/* Container base styles */
+.container {
+  position: absolute;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
+  overflow: hidden;
+  resize: none;
+}
+
+/* Drag handle base styles */
+.drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: move;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Container title with ellipsis */
+.container-title {
+  font-weight: 600;
+  font-size: .9rem;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0; /* Important for flexbox truncation */
+}
+
+/* Container content area */
+.container-content {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+/* Mode indicators */
+.container[data-mode="pinned"] {
+  border-color: #e53e3e;
+}
+
+.container[data-mode="snap"] {
+  border-color: #38a169;
+}
+
+.container[data-mode="smooth"] {
+  border-color: #3182ce;
+}
+
+/**
+ * Enhanced resize handles for all directions
+ */
+
+/* Direction-specific handle sizes and interactions */
+.resize-n,
+.resize-s {
+  height: 12px;
+  cursor: ns-resize;
+  left: 0;
+  right: 0;
+}
+
+.resize-e,
+.resize-w {
+  width: 12px;
+  cursor: ew-resize;
+  top: 0;
+  bottom: 0;
+}
+
+.resize-ne,
+.resize-nw,
+.resize-se,
+.resize-sw {
+  width: 16px;
+  height: 16px;
+  background: transparent; /* Changed from #4299e1 to transparent */
+  border-radius: 2px;
+}
+
+.resize-n { top: 0; }
+.resize-s { bottom: 0; }
+.resize-e { right: 0; }
+.resize-w { left: 0; }
+
+.resize-ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+
+.resize-nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+.resize-se {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+
+.resize-sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+/* Hover effects for better usability */
+.resize-handle:hover {
+  background: rgba(66, 153, 225, .3);
+}
+
+/* Corner handles hover effects - changed background to match other handles */
+.resize-ne:hover,
+.resize-nw:hover,
+.resize-se:hover,
+.resize-sw:hover {
+  background: rgba(66, 153, 225, .3); /* Changed from #4299e1 to rgba */
+  transform: scale(1.1);
+}
+
+/* Base styles for resize handles */
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+/* Handle content layout */
+.handle-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+/* Mode controls container */
+.mode-controls-container {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Mode buttons base styles */
+.mode-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all .3s cubic-bezier(.4, 0, .2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #6b7280;
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-btn:hover {
+  transform: scale(1.2);
+  background: rgba(0, 0, 0, .05);
+}
+
+.mode-btn:active {
+  transform: scale(1.1);
+}
+
+/* Focus styles for accessibility */
+.mode-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar for containers */
+.container-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.container-content::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.container-content::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 3px;
+}
+
+.container-content::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}

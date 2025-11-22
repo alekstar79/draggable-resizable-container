@@ -1,0 +1,69 @@
+{
+  "name": "@alekstar79/draggable-resizable-container",
+  "version": "1.0.0",
+  "description": "A modern TypeScript library for managing draggable and resizable containers",
+  "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/container-manager.js",
+  "module": "./dist/container-manager.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/container-manager.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./plugins": {
+      "import": "./dist/plugins/index.js",
+      "types": "./dist/plugins/index.d.ts"
+    },
+    "./styles": {
+      "import": "./dist/styles/base.css",
+      "require": "./dist/styles/base.css"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "yarn build:lib && vite build --config vite.config.ts",
+    "build:lib": "vite build --config vite.lib.config.ts",
+    "type-check": "tsc --noEmit",
+    "preview": "vite preview",
+    "prepublishOnly": "yarn build:lib"
+  },
+  "keywords": [
+    "draggable",
+    "resizable",
+    "container",
+    "typescript",
+    "plugin-system",
+    "reactive",
+    "ui"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alekstar79/draggable-resizable-container.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alekstar79/draggable-resizable-container/issues"
+  },
+  "homepage": "https://github.com/alekstar79/draggable-resizable-container#readme",
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8",
+    "vite-plugin-dts": "^3.6.4",
+    "vite-plugin-lib-inject-css": "^2.2.2",
+    "vite-plugin-static-copy": "^3.1.4"
+  },
+  "dependencies": {
+    "@alekstar79/reactive-event-system": "^1.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
