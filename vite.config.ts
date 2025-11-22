@@ -1,5 +1,6 @@
 import { dirname, extname, resolve } from 'path'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
+import generateFile from 'vite-plugin-generate-file'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
@@ -11,7 +12,12 @@ export default defineConfig({
         src: resolve(__dirname, 'src/demo/templates/*'),
         dest: './templates'
       }]
-    })
+    }),
+    generateFile([{
+      type: 'raw',
+      output: './.gitignore',
+      data: '*\n!.gitignore'
+    }])
   ],
   resolve: {
     alias: {
