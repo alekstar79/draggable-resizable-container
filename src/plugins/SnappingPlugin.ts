@@ -1,6 +1,6 @@
 // src/plugins/SnappingPlugin.ts
 
-import type { ContainerManagerInterface, ContainerManagerPlugin, ContainerState } from '../core/types'
+import type { ContainerManagerInterface, Plugin, ContainerState } from '../core/types'
 import { reactive } from '@alekstar79/reactive-event-system'
 
 /**
@@ -39,7 +39,7 @@ interface SnappingPluginState {
 /**
  * Snapping plugin for Container Manager
  */
-export class SnappingPlugin implements ContainerManagerPlugin
+export class SnappingPlugin implements Plugin
 {
   // Plugin state
   private reactiveState = reactive<SnappingPluginState>({

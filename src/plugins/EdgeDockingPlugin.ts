@@ -1,6 +1,6 @@
 // src/plugins/EdgeDockingPlugin.ts
 
-import type { ContainerManagerInterface, ContainerManagerPlugin, ContainerState } from '../core/types'
+import type { ContainerManagerInterface, Plugin, ContainerState } from '../core/types'
 import { getStyles } from '../utils'
 
 export interface EdgeDockingPluginOptions {
@@ -20,7 +20,7 @@ export interface Styles {
 
 export type DockEdge = keyof Omit<Styles, 'width' | 'height'>
 
-export class EdgeDockingPlugin implements ContainerManagerPlugin
+export class EdgeDockingPlugin implements Plugin
 {
   private static edgeWrappers: Map<DockEdge, HTMLElement> = new Map()
   private static dockedContainers: Map<DockEdge, ContainerManagerInterface> = new Map()

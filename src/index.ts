@@ -9,7 +9,7 @@ export { ContainerManager } from './core/ContainerManager.ts'
 export type {
   ContainerConfig,
   ContainerManagerInterface,
-  ContainerManagerPlugin,
+  Plugin,
   ContainerEvent,
   ContainerState,
   Boundaries,

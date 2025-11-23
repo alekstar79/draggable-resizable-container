@@ -7,7 +7,7 @@ import {
   AutoAdjustConfig,
   Boundaries,
   ContainerManagerInterface,
-  ContainerManagerPlugin,
+  Plugin,
   ContainerConfig,
   ContainerEvent,
   ContainerState,
@@ -36,7 +36,7 @@ export class ContainerManager implements ContainerManagerInterface
   private readonly container: HTMLElement
   private dragHandle!: HTMLElement
   private resizeHandles: Map<ResizeDirection, HTMLElement> = new Map()
-  private installedPlugins: Set<ContainerManagerPlugin> = new Set()
+  private installedPlugins: Set<Plugin> = new Set()
   private reactiveEffects: (() => void)[] = []
 
   private isDragging: boolean = false
@@ -1191,7 +1191,7 @@ export class ContainerManager implements ContainerManagerInterface
   /**
    * Install plugin on this container manager instance
    */
-  use(plugin: ContainerManagerPlugin, options?: any): ContainerManagerInterface
+  use(plugin: Plugin, options?: any): ContainerManagerInterface
   {
     // Prevent duplicate plugin installation
     if (this.installedPlugins.has(plugin)) {
@@ -1211,7 +1211,7 @@ export class ContainerManager implements ContainerManagerInterface
   /**
    * Check if plugin is installed on this instance
    */
-  hasPlugin(plugin: ContainerManagerPlugin): boolean
+  hasPlugin(plugin: Plugin): boolean
   {
     return this.installedPlugins.has(plugin)
   }
@@ -1219,7 +1219,7 @@ export class ContainerManager implements ContainerManagerInterface
   /**
    * Get all installed plugins on this instance
    */
-  getInstalledPlugins(): ContainerManagerPlugin[]
+  getInstalledPlugins(): Plugin[]
   {
     return Array.from(this.installedPlugins)
   }

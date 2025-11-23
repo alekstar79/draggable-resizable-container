@@ -1,14 +1,14 @@
 // src/plugins/LoggingPlugin.ts
 // noinspection JSUnusedGlobalSymbols
 
-import { ContainerManagerInterface, ContainerManagerPlugin, ContainerEvent } from '../core/types'
+import { ContainerManagerInterface, Plugin, ContainerEvent } from '../core/types'
 import { debounce } from '../utils'
 
 /**
  * Logging plugin for Container Manager
  * Logs container events and displays notifications
  */
-export class LoggingPlugin implements ContainerManagerPlugin
+export class LoggingPlugin implements Plugin
 {
   private manager?: ContainerManagerInterface
   private containerName: string = ''

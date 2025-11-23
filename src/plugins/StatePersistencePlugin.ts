@@ -5,7 +5,7 @@ import { debounce } from '../utils'
 
 import {
   ContainerManagerInterface,
-  ContainerManagerPlugin,
+  Plugin,
   DirectionMode,
   MovementMode,
   ResizeConfig,
@@ -49,7 +49,7 @@ interface PersistencePluginState {
 /**
  * State persistence plugin for Container Manager
  */
-export class StatePersistencePlugin implements ContainerManagerPlugin
+export class StatePersistencePlugin implements Plugin
 {
   private static readonly STORAGE_KEY = 'containerManagerState'
   private static readonly CLOSED_QUEUE_KEY = 'containerManagerClosedQueue'

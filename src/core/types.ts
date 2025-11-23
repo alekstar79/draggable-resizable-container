@@ -125,9 +125,9 @@ export interface ContainerManagerInterface {
   onPluginEvent(event: string, listener: Function): void
   offPluginEvent(event: string, listener: Function): void
   usePluginMiddleware(event: string, middleware: PluginMiddleware): () => void
-  use(plugin: ContainerManagerPlugin, options?: any): ContainerManagerInterface
-  hasPlugin(plugin: ContainerManagerPlugin): boolean
-  getInstalledPlugins(): ContainerManagerPlugin[]
+  use(plugin: Plugin, options?: any): ContainerManagerInterface
+  hasPlugin(plugin: Plugin): boolean
+  getInstalledPlugins(): Plugin[]
 
   [p: string]: any
 }
@@ -135,11 +135,12 @@ export interface ContainerManagerInterface {
 /**
  * Base plugin interface that all plugins must implement
  */
-export interface ContainerManagerPlugin {
+export interface Plugin {
   /**
    * Install plugin on container manager instance
    * @param instance - ContainerManager instance implementing ContainerManagerInterface
    * @param options - Plugin configuration options
    */
   install(instance: ContainerManagerInterface, options?: any): void
+  destroy?(): void
 }
