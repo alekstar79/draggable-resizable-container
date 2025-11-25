@@ -1,566 +1,438 @@
 // src/plugins/EdgeDockingPlugin.ts
 
-import type { ContainerManagerInterface, Plugin, ContainerState } from '../core/types'
-import { getStyles } from '../utils'
+import { Plugin, ContainerManagerInterface } from '../core/types'
+import { type IEdgeController, createTracker } from '../utils'
 
-export interface EdgeDockingPluginOptions {
-  enabled?: boolean;
-  edgeThreshold?: number;
-  visiblePeek?: number;
+export type Edge = 'top' | 'bottom' | 'left' | 'right'
+
+export interface DockedContainer {
+  element: HTMLElement
+  originalPosition: {
+    top: number
+    left: number
+    width: number
+    height: number
+    transform: string
+    position: string
+  }
+  edge: Edge
+  screenPosition: {
+    x: number
+    y: number
+  }
 }
 
-export interface Styles {
-  width: number | string | boolean | null
-  height: number | string | boolean | null
-  top: number | string | boolean | null
-  right: number | string | boolean | null
-  bottom: number | string | boolean | null
-  left: number | string | boolean | null
+export interface EdgeDockingConfig {
+  edgeThreshold?: number
+  visiblePeek?: number
+  animationDuration?: number
+  enabled?: boolean
 }
-
-export type DockEdge = keyof Omit<Styles, 'width' | 'height'>
 
 export class EdgeDockingPlugin implements Plugin
 {
-  private static edgeWrappers: Map<DockEdge, HTMLElement> = new Map()
-  private static dockedContainers: Map<DockEdge, ContainerManagerInterface> = new Map()
-  private static isInitialized: boolean = false
+  private static _pluginId: Symbol = Symbol('EdgeDockingPlugin')
 
-  private options: Required<EdgeDockingPluginOptions>
-  private manager?: ContainerManagerInterface
-
-  private originalState = {} as ContainerState
-  private transformState = {} as ContainerState
-  private dockState: ContainerState | null = null
-  private undockState: ContainerState | null = null
-
-  private containerId?: string
-  private dockedId: number | null = null
-
-  constructor(options: EdgeDockingPluginOptions = {})
-  {
-    this.options = {
-      enabled: true,
-      edgeThreshold: 30,
-      visiblePeek: 20,
-      ...options
-    }
+  get pluginId(): Symbol {
+    return EdgeDockingPlugin._pluginId
   }
 
-  install(manager: ContainerManagerInterface, options?: { containerId: string }): void
+  private dockedContainers = new Map<HTMLElement, DockedContainer>()
+  private occupiedEdges = new Map<Edge, HTMLElement | null>()
+  private tracker: IEdgeController = createTracker({ emitter: true, edgeThreshold: 20 })
+  private manager!: ContainerManagerInterface
+
+  private readonly edgeThreshold: number
+
+  constructor(config: EdgeDockingConfig = {})
   {
-    this.containerId = options?.containerId
+    this.edgeThreshold = config.edgeThreshold ?? 30
+
+    // Initialize all edges as available
+    this.occupiedEdges.set('top', null)
+    this.occupiedEdges.set('bottom', null)
+    this.occupiedEdges.set('left', null)
+    this.occupiedEdges.set('right', null)
+  }
+
+  install(manager: ContainerManagerInterface): void
+  {
     this.manager = manager
 
-    if (!EdgeDockingPlugin.isInitialized) {
-      EdgeDockingPlugin.initializeEdgeSystem()
-      EdgeDockingPlugin.isInitialized = true
-    }
+    // Set up edge tracking
+    this.tracker.addTarget(this.manager.getContainer())
 
-    this.bindContainerEvents()
+    // Subscribe to edge events for visual feedback
+    this.tracker.on('edge:enter', (data) => {
+      if (data.source === 'element' && data.element === this.manager.getContainer()) {
+        this.handleEdgeEnter(data.edge!)
+      }
+    })
 
-    void this.containerId
+    this.tracker.on('edge:leave', (data) => {
+      if (data.source === 'element' && data.element === this.manager.getContainer()) {
+        this.handleEdgeLeave(data.edge!)
+      }
+    })
+
+    this.attachEventHandlers()
   }
 
   /**
-   * Initialization of the system with correct positioning
+   * Handle edge enter for visual feedback
    */
-  private static initializeEdgeSystem(): void
+  private handleEdgeEnter(edge: Edge): void
   {
-    const edges: DockEdge[] = ['top', 'right', 'bottom', 'left']
+    const element = this.manager.getContainer()
 
-    edges.forEach(edge => {
-      const wrapper = document.createElement('div')
-      wrapper.className = `edge-docking-wrapper ${edge}-edge`
+    if (this.isEdgeOccupied(edge)) {
+      // Edge is occupied - show blocked hint
+      element.classList.add('edge-dock-hint', `edge-dock-hint-${edge}`, 'edge-dock-blocked')
+    } else {
+      // Edge is available - show available hint
+      element.classList.add('edge-dock-hint', `edge-dock-hint-${edge}`)
+    }
+  }
 
-      Object.assign(wrapper.style, {
-        position: 'fixed',
-        background: 'transparent',
-        border: 'none',
-        pointerEvents: 'none',
-        overflow: 'hidden',
-        zIndex: '9998',
-        transition: 'all 0.3s ease'
-      })
+  /**
+   * Handle edge leave - remove visual feedback
+   */
+  private handleEdgeLeave(edge: Edge): void
+  {
+    const element = this.manager.getContainer()
+    element.classList.remove('edge-dock-hint', `edge-dock-hint-${edge}`, 'edge-dock-blocked')
+  }
 
-      // Positioning the wrapper based on peek
-      this.positionEdgeWrapper(wrapper, edge, false)
-      document.body.appendChild(wrapper)
-      EdgeDockingPlugin.edgeWrappers.set(edge, wrapper)
+  /**
+   * Check if an edge is occupied by another container
+   */
+  private isEdgeOccupied(edge: Edge): boolean
+  {
+    return this.occupiedEdges.get(edge) !== null
+  }
 
-      // Creating a edge-docking-zone
-      const zone = document.createElement('div')
-      zone.className = `edge-docking-zone ${edge}-zone`
+  /**
+   * Attach event handlers to container manager
+   */
+  private attachEventHandlers(): void
+  {
+    // Add mouse events for hover behavior
+    const container = this.manager.getContainer()
+    container.addEventListener('mouseenter', this.onMouseEnter.bind(this))
+    container.addEventListener('mouseleave', this.onMouseLeave.bind(this))
 
-      Object.assign(zone.style, {
-        position: 'fixed',
-        background: 'transparent',
-        pointerEvents: 'auto',
-        cursor: 'default',
-        zIndex: '10',
-        opacity: '0',
-        transition: 'opacity 0.2s ease, background-color 0.2s ease'
-      })
+    this.manager.on('dragStart', (data: any) => {
+      this.onDragStart(data.element)
+    })
 
-      // Positioning the zone
-      this.positionEdgeZone(zone, edge)
-      document.body.appendChild(zone)
+    this.manager.on('drag', (data: any) => {
+      this.onDrag(data.element)
+    })
 
-      this.bindZoneEvents(zone, wrapper, edge)
+    this.manager.on('dragEnd', (data: any) => {
+      this.onDragEnd(data.element)
     })
   }
 
   /**
-   * Positioning edge-docking-wrapper
+   * Handle mouse enter - show docked container
    */
-  private static positionEdgeWrapper(
-    wrapper: HTMLElement,
-    edge: DockEdge,
-    isVisible: boolean
-  ): void {
-    if (!wrapper.firstElementChild) return
+  private onMouseEnter(): void
+  {
+    const element = this.manager.getContainer()
+    if (this.isContainerDocked(element)) {
+      element.classList.add('edge-docked-visible')
+    }
+  }
 
-    const peek = 20
-    const props: Array<keyof Styles> = ['height', 'width']
-    const containerStyles = getStyles<(keyof Styles)[]>(
-      wrapper.firstElementChild,
-      props
+  /**
+   * Handle mouse leave - hide docked container
+   */
+  private onMouseLeave(): void
+  {
+    const element = this.manager.getContainer()
+    if (this.isContainerDocked(element)) {
+      element.classList.remove('edge-docked-visible')
+    }
+  }
+
+  /**
+   * Handle drag start - undock if docked
+   */
+  private onDragStart(element: HTMLElement): void
+  {
+    // Remove any edge hints and visibility
+    element.classList.remove(
+      'edge-dock-hint', 'edge-dock-blocked', 'edge-docked-visible',
+      'edge-dock-hint-top', 'edge-dock-hint-bottom',
+      'edge-dock-hint-left', 'edge-dock-hint-right'
     )
 
-    switch (edge) {
-      case 'top':
-        Object.assign(wrapper.style, {
-          top: '0',
-          left: '0',
-          right: '0',
-          height: containerStyles.height,
-          transform: isVisible ? `translateY(${peek}px)`: `translateY(calc(-100% + ${peek}px))`
-        })
-        break
-      case 'bottom':
-        Object.assign(wrapper.style, {
-          bottom: '0',
-          left: '0',
-          right: '0',
-          height: containerStyles.height,
-          transform: isVisible ? `translateY(-${peek}px)` : `translateY(calc(100% - ${peek}px))`
-        })
-        break
-      case 'left':
-        Object.assign(wrapper.style, {
-          top: '0',
-          left: '0',
-          bottom: '0',
-          width: containerStyles.width,
-          transform: isVisible ? `translateX(${peek}px)` : `translateX(calc(-100% + ${peek}px))`
-        })
-        break
-      case 'right':
-        Object.assign(wrapper.style, {
-          top: '0',
-          right: '0',
-          bottom: '0',
-          width: containerStyles.width,
-          transform: isVisible ? `translateX(-${peek}px)` : `translateX(calc(100% - ${peek}px))`
-        })
+    const docked = this.dockedContainers.get(element)
+    if (docked) {
+      this.undockContainer(element, docked)
     }
   }
 
   /**
-   * Positioning edge-docking-zone
+   * Handle drag - update edge hints based on position
    */
-  private static positionEdgeZone(zone: HTMLElement, edge: DockEdge): void
+  private onDrag(element: HTMLElement): void
   {
-    const threshold = 30
+    const rect = element.getBoundingClientRect()
+    const edge = this.getClosestEdge(rect)
 
-    switch (edge) {
-      case 'top':
-        Object.assign(zone.style, { top: '0', left: '0', right: '0', height: `${threshold}px` })
-        break
-      case 'bottom':
-        Object.assign(zone.style, { bottom: '0', left: '0', right: '0', height: `${threshold}px` })
-        break
-      case 'left':
-        Object.assign(zone.style, { top: '0', left: '0', bottom: '0', width: `${threshold}px` })
-        break
-      case 'right':
-        Object.assign(zone.style, { top: '0', right: '0', bottom: '0', width: `${threshold}px` })
+    // Update visual hints based on current position
+    this.updateEdgeHints(element, edge)
+  }
+
+  /**
+   * Handle drag end - dock if close to edge
+   */
+  private onDragEnd(element: HTMLElement): void
+  {
+    const rect = element.getBoundingClientRect()
+    const edge = this.getClosestEdge(rect)
+
+    // Remove all hints
+    element.classList.remove(
+      'edge-dock-hint', 'edge-dock-blocked',
+      'edge-dock-hint-top', 'edge-dock-hint-bottom',
+      'edge-dock-hint-left', 'edge-dock-hint-right'
+    )
+
+    if (edge && !this.isEdgeOccupied(edge)) {
+      this.dockContainer(element, edge)
     }
   }
 
   /**
-   * Events for the edge-docking-zone
+   * Update visual hints for edge docking
    */
-  private static bindZoneEvents(
-    zone: HTMLElement,
-    wrapper: HTMLElement,
-    edge: DockEdge
-  ): void {
-    let hideTimeout: number
+  private updateEdgeHints(element: HTMLElement, activeEdge: Edge | null): void
+  {
+    // Remove all existing hints
+    element.classList.remove(
+      'edge-dock-hint', 'edge-dock-blocked',
+      'edge-dock-hint-top', 'edge-dock-hint-bottom',
+      'edge-dock-hint-left', 'edge-dock-hint-right'
+    )
 
-    const showWrapper = () => {
-      clearTimeout(hideTimeout)
-
-      // Show the wrapper only if it has a container
-      if (EdgeDockingPlugin.dockedContainers.has(edge)) {
-        wrapper.style.pointerEvents = 'auto'
-        this.positionEdgeWrapper(wrapper, edge, true)
-        zone.style.background = 'rgba(59, 130, 246, 0.1)'
-        zone.style.opacity = '1'
+    if (activeEdge) {
+      if (this.isEdgeOccupied(activeEdge)) {
+        element.classList.add('edge-dock-hint', `edge-dock-hint-${activeEdge}`, 'edge-dock-blocked')
+      } else {
+        element.classList.add('edge-dock-hint', `edge-dock-hint-${activeEdge}`)
       }
     }
-
-    const hideWrapper = () => {
-      hideTimeout = window.setTimeout(() => {
-        // Hide only if the cursor is not on the wrapper or the area
-        if (!wrapper.matches(':hover') && !zone.matches(':hover')) {
-          wrapper.style.pointerEvents = 'none'
-          this.positionEdgeWrapper(wrapper, edge, false)
-          zone.style.background = 'transparent'
-          zone.style.opacity = '0'
-        }
-      }, 300)
-    }
-
-    // Zone Events
-    zone.addEventListener('mouseenter', showWrapper)
-    zone.addEventListener('mouseleave', hideWrapper)
-
-    // Wrapper Events
-    wrapper.addEventListener('mouseenter', () => {
-      clearTimeout(hideTimeout)
-    })
-
-    wrapper.addEventListener('mouseleave', hideWrapper)
   }
 
   /**
-   * Container Events
+   * Get the closest edge to the container
    */
-  private bindContainerEvents(): void
+  private getClosestEdge(rect: DOMRect): Edge | null
   {
-    if (!this.manager) return
+    const distTop = rect.top
+    const distLeft = rect.left
+    const distBottom = window.innerHeight - rect.bottom
+    const distRight = window.innerWidth - rect.right
 
-    this.manager.on('dragStart', () => {
-      const currentEdge = this.getCurrentDockEdge()
-      if (currentEdge) {
-        this.undock(currentEdge)
-      }
-    })
-
-    this.manager.on('dragEnd', () => {
-      if (this.options.enabled) {
-        this.tryDock()
-      }
-    })
-  }
-
-  /**
-   * Trying to dock the container
-   */
-  private tryDock(): void
-  {
-    if (!this.manager) return
-
-    const container = this.manager.getContainer()
-    const rect = container.getBoundingClientRect()
-    const viewport = {
-      width: window.innerWidth,
-      height: window.innerHeight
-    }
-
-    // Checking the distance to the edges
     const distances = {
-      top: rect.top,
-      right: viewport.width - rect.right,
-      bottom: viewport.height - rect.bottom,
-      left: rect.left
+      top: distTop,
+      bottom: distBottom,
+      left: distLeft,
+      right: distRight
     }
 
-    // Looking for the nearest available edge
-    let closestEdge: DockEdge | null = null
-    let minDistance = this.options.edgeThreshold
+    const validEdges = Object.entries(distances)
+      .filter(([_, dist]) => dist >= -this.edgeThreshold && dist <= this.edgeThreshold)
+      .sort((a, b) => a[1] - b[1])
 
-    for (const [edge, distance] of Object.entries(distances) as [DockEdge, number][]) {
-      if (distance <= minDistance && !EdgeDockingPlugin.dockedContainers.has(edge)) {
-        closestEdge = edge
-        minDistance = distance
+    return validEdges.length > 0
+      ? validEdges[0][0] as Edge
+      : null
+  }
+
+  /**
+   * Dock container to specified edge
+   */
+  private dockContainer(element: HTMLElement, edge: Edge): void
+  {
+    // Save current state before any modifications
+    const style = window.getComputedStyle(element)
+    const rect = element.getBoundingClientRect()
+
+    // Save screen position for proper restoration
+    const screenPosition = {
+      x: rect.left,
+      y: rect.top
+    }
+
+    this.dockedContainers.set(element, {
+      element,
+      edge,
+      screenPosition,
+      originalPosition: {
+        top: parseFloat(style.top) || rect.top,
+        left: parseFloat(style.left) || rect.left,
+        width: rect.width,
+        height: rect.height,
+        transform: style.transform,
+        position: style.position
       }
-    }
-
-    if (closestEdge) {
-      this.dock(closestEdge)
-    }
-  }
-
-  /**
-   * Dock the container to the edge
-   */
-  private dock(edge: DockEdge): void
-  {
-    if (!this.manager) return
-
-    const wrapper = EdgeDockingPlugin.edgeWrappers.get(edge)
-    const container = this.manager.getContainer()
-
-    if (!wrapper) return
-
-    this.originalState = { ...this.manager.getState() }
-
-    const docked = () => {
-      this.manager?.setState(this.dockState!)
-
-      window.removeEventListener('docked', docked)
-      this.dockedId && clearTimeout(this.dockedId)
-      this.dockedId = null
-    }
-
-    const undocked = () => {
-      this.manager?.setState(this.undockState!)
-
-      window.removeEventListener('undocked', undocked)
-      this.dockedId && clearTimeout(this.dockedId)
-      this.dockedId = null
-    }
-
-    window.addEventListener('undocked', undocked)
-    window.addEventListener('docked', docked)
-
-    // Moving the container to the wrapper
-    wrapper.appendChild(container)
-
-    setTimeout(() => {
-      this.setupDockedPositioning(container, edge)
-    }, 10)
-
-    // Updating the status
-    EdgeDockingPlugin.dockedContainers.set(edge, this.manager)
-
-    // Show wrapper immediately after docking
-    wrapper.style.pointerEvents = 'auto'
-    EdgeDockingPlugin.positionEdgeWrapper(wrapper, edge, true)
-  }
-
-  /**
-   * Setup positioning of the docked container
-   */
-  private setupDockedPositioning(container: HTMLElement, edge: DockEdge): void
-  {
-    if (!this.manager) return
-
-    Object.assign(container.style, {
-      position: 'absolute',
-      left: 'auto',
-      top: 'auto',
-      right: 'auto',
-      bottom: 'auto',
-      margin: '0',
-      transform: 'none'
     })
 
-    switch (edge) {
-      case 'top':
-        container.style.bottom = '0'
-        container.style.left = '50%'
-        container.style.transform = 'translateX(-50%)'
-        container.style.inset = 'auto auto 0 50%'
-        break
-      case 'bottom':
-        container.style.top = '0'
-        container.style.left = '50%'
-        container.style.transform = 'translateX(-50%)'
-        container.style.inset = '0 auto auto 50%'
-        break
-      case 'left':
-        container.style.right = '0'
-        container.style.top = '50%'
-        container.style.transform = 'translateY(-50%)'
-        container.style.inset = '50% 0 auto auto'
-        break
-      case 'right':
-        container.style.left = '0'
-        container.style.top = '50%'
-        container.style.transform = 'translateY(-50%)'
-        container.style.inset = '50% auto auto 0'
-        break
-    }
+    // Mark edge as occupied
+    this.occupiedEdges.set(edge, element)
 
-    // Visual indicators
-    container.style.border = '2px solid rgba(59, 130, 246, 0.3)'
-    container.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)'
-    container.dataset.docked = 'true'
-    container.dataset.dockEdge = edge
+    // Clear any existing positioning styles that might interfere
+    element.style.top = ''
+    element.style.bottom = ''
+    element.style.left = ''
+    element.style.right = ''
+    element.style.width = ''
+    element.style.height = ''
+    element.style.transform = ''
 
-    this.transformState = {
-      ...this.originalState,
-      ...getStyles(container, { left: 'x', top: 'y' }, true)
-    } as ContainerState
+    // Apply docking styles based on edge with proper positioning
+    element.classList.add('edge-docked', `edge-docked-${edge}`)
 
-    this.calcDockState(edge)
-    this.calcUndockState(edge)
-    this.handleDispatch('docked')
+    // Set proper positioning for each edge to prevent shifting
+    this.applyEdgePositioning(element, edge, screenPosition)
+
+    // Set data attribute for CSS targeting
+    element.setAttribute('data-docked', 'true')
+    element.setAttribute('data-docked-edge', edge)
   }
 
-  private calcDockState(edge: DockEdge): void
-  {
-    const coords = { x: 0, y: 0 }
+  /**
+   * Apply proper positioning for each edge to prevent shifting
+   */
+  private applyEdgePositioning(
+    element: HTMLElement,
+    edge: Edge,
+    screenPosition: { x: number; y: number }
+  ): void {
+    const rect = element.getBoundingClientRect()
 
     switch (edge) {
       case 'top':
-        coords.x = this.transformState.x - (this.transformState.width / 2)
+        // For top edge - preserve horizontal position
+        element.style.left = `${screenPosition.x}px`
+        element.style.width = `${rect.width}px`
         break
       case 'bottom':
-        coords.x = this.transformState.x - (this.transformState.width / 2)
+        // For bottom edge - preserve horizontal position
+        element.style.left = `${screenPosition.x}px`
+        element.style.width = `${rect.width}px`
         break
       case 'left':
-        coords.y = this.transformState.y - (this.transformState.height / 2)
+        // For left edge - preserve vertical position
+        element.style.top = `${screenPosition.y}px`
+        element.style.height = `${rect.height}px`
         break
       case 'right':
-        coords.y = this.transformState.y - (this.transformState.height / 2)
-    }
-
-    this.dockState = {
-      ...this.transformState,
-      ...coords
+        // For right edge - preserve vertical position
+        element.style.top = `${screenPosition.y}px`
+        element.style.height = `${rect.height}px`
+        break
     }
   }
 
-  private calcUndockState(edge: DockEdge): void
+  /**
+   * Undock container from edge
+   */
+  private undockContainer(element: HTMLElement, docked: DockedContainer): void
   {
-    const coords = { x: 0, y: 0 }
+    // Remove from docked containers
+    this.dockedContainers.delete(element)
 
-    switch (edge) {
-      case 'top':
-        coords.x = this.transformState.x - (this.transformState.width / 2)
-        break
-      case 'bottom':
-        coords.x = this.transformState.x - (this.transformState.width / 2)
-        coords.y = this.originalState.y - 20
-        break
-      case 'left':
-        coords.y = this.transformState.y - (this.transformState.height / 2)
-        break
-      case 'right':
-        coords.y = this.transformState.y - (this.transformState.height / 2)
-        coords.x = this.originalState.x - 20
-    }
+    // Free the edge
+    this.occupiedEdges.set(docked.edge, null)
 
-    this.undockState = {
-      ...this.transformState,
-      ...coords
-    }
-  }
-
-  private handleDispatch(event: 'docked' | 'undocked')
-  {
-    if (typeof this.dockedId !== 'number') {
-      this.dockedId = window.setTimeout(() => {
-        this.dispatch(event)
-      })
-    }
-  }
-
-  private dispatch(event: 'docked' | 'undocked'): void
-  {
-    window.dispatchEvent(
-      new CustomEvent(event, {
-        bubbles: false,
-        cancelable: true,
-        composed: true
-      })
+    // Remove all docking classes and attributes
+    element.classList.remove(
+      'edge-docked', 'edge-docked-visible',
+      'edge-docked-top', 'edge-docked-bottom',
+      'edge-docked-left', 'edge-docked-right'
     )
+
+    element.removeAttribute('data-docked')
+    element.removeAttribute('data-docked-edge')
+
+    // Clear all positioning styles
+    element.style.top = ''
+    element.style.bottom = ''
+    element.style.left = ''
+    element.style.right = ''
+    element.style.width = ''
+    element.style.height = ''
+    element.style.transform = ''
+    element.style.position = ''
+
+    // Restore position using saved screen coordinates to avoid shifting
+    this.restoreOriginalPosition(element, docked)
   }
 
   /**
-   * Undocking container
+   * Restore container to its original position without shifting
    */
-  private undock(edge: DockEdge): void
+  private restoreOriginalPosition(_element: HTMLElement, docked: DockedContainer): void
   {
-    const manager = EdgeDockingPlugin.dockedContainers.get(edge)
-    if (!manager || manager !== this.manager) return
-
-    const wrapper = EdgeDockingPlugin.edgeWrappers.get(edge)
-    const container = manager.getContainer()
-
-    if (wrapper && container.parentElement === wrapper) {
-      document.body.appendChild(container)
-
-      // Restoring styles
-      this.restoreContainerStyles(container, edge)
-
-      // Restoring the state
-      if (this.undockState) {
-        this.handleDispatch('undocked')
-      }
-
-      EdgeDockingPlugin.dockedContainers.delete(edge)
-      EdgeDockingPlugin.positionEdgeWrapper(wrapper, edge, false)
-      wrapper.style.pointerEvents = 'none'
-    }
+    // Use saved screen coordinates for precise position restoration
+    this.manager.setState({
+      x: docked.screenPosition.x,
+      y: docked.screenPosition.y,
+      width: docked.originalPosition.width,
+      height: docked.originalPosition.height
+    })
   }
 
   /**
-   * Restoring container styles
+   * Get the docked container for a specific edge
    */
-  private restoreContainerStyles(container: HTMLElement, edge: DockEdge): void
+  getDockedContainer(edge: Edge): DockedContainer | null
   {
-    const left = edge === 'top' || edge === 'bottom'
-      ? `${this.undockState!.x}px`
-      : ''
-
-    const top = edge === 'left' || edge === 'right'
-      ? `${this.undockState!.y}px`
-      : ''
-
-    container.style.position = 'absolute'
-    container.style.margin = ''
-    container.style.transform = ''
-    container.style.top = top
-    container.style.bottom = ''
-    container.style.left = left
-    container.style.right = ''
-    container.style.border = ''
-    container.style.boxShadow = ''
-    delete container.dataset.docked
-    delete container.dataset.dockEdge
+    const container = this.occupiedEdges.get(edge)
+    return container ? this.dockedContainers.get(container) || null : null
   }
 
   /**
-   * Get the current edge to which the container is docked
+   * Check if container is docked
    */
-  private getCurrentDockEdge(): DockEdge | null
+  isContainerDocked(element: HTMLElement): boolean
   {
-    for (const [edge, manager] of EdgeDockingPlugin.dockedContainers.entries()) {
-      if (manager === this.manager) {
-        return edge
-      }
-    }
-    return null
+    return this.dockedContainers.has(element)
   }
 
+  /**
+   * Get the edge where container is docked
+   */
+  getContainerDockEdge(element: HTMLElement): Edge | null
+  {
+    const docked = this.dockedContainers.get(element)
+    return docked ? docked.edge : null
+  }
+
+  /**
+   * Clean up resources
+   */
   destroy(): void
   {
-    const currentEdge = this.getCurrentDockEdge()
-    if (currentEdge) {
-      this.undock(currentEdge)
-    }
-  }
+    const container = this.manager.getContainer()
+    container.removeEventListener('mouseenter', this.onMouseEnter.bind(this))
+    container.removeEventListener('mouseleave', this.onMouseLeave.bind(this))
 
-  static destroySystem(): void
-  {
-    EdgeDockingPlugin.dockedContainers
-      .forEach((manager, edge) => {
-        const wrapper = EdgeDockingPlugin.edgeWrappers.get(edge)
-        const container = manager.getContainer()
+    // Undock all containers
+    this.dockedContainers.forEach((docked, element) => {
+      this.undockContainer(element, docked)
+    })
 
-        if (wrapper && container.parentElement === wrapper) {
-          document.body.appendChild(container)
-        }
-      })
+    this.dockedContainers.clear()
 
-    EdgeDockingPlugin.dockedContainers.clear()
-    EdgeDockingPlugin.edgeWrappers.forEach(wrapper => wrapper.remove())
-    EdgeDockingPlugin.edgeWrappers.clear()
-    EdgeDockingPlugin.isInitialized = false
+    // Reset occupied edges
+    this.occupiedEdges.forEach((_, edge) => {
+      this.occupiedEdges.set(edge, null)
+    })
   }
 }

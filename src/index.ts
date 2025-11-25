@@ -5,7 +5,7 @@
  * Exports all public API for the container manager library
  */
 
-export { ContainerManager } from './core/ContainerManager.ts'
+export { ContainerManager } from './core/ContainerManager'
 export type {
   ContainerConfig,
   ContainerManagerInterface,
@@ -36,6 +36,16 @@ export {
   isInViewport
 } from './utils/helpers.ts'
 
-export type { TemplateConfig } from './utils/templateLoader'
+export type { TemplateConfig } from './utils/TemplateLoader.ts'
+
+// Re-export from external dependencies
+export {
+  ref,
+  reactive,
+  computed,
+  effect,
+  watch,
+  batch,
+} from '@alekstar79/reactivity'
 
 import './styles/base.css'

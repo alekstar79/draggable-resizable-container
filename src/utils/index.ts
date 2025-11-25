@@ -2,16 +2,40 @@
  * Utility exports for Container Manager library
  */
 
-export { NotificationSystem, defaultNotificationSystem } from './notifications'
-export { ContentCreator } from './contentCreator'
-export { StatsManager } from './statsManager'
+export { NotificationSystem, defaultNotificationSystem } from './Notifications.ts'
+export { ContentCreator } from './ContentCreator.ts'
+export { StatsManager } from './StatsManager.ts'
 
 export type {
   TemplateConfig,
   TemplateLoadError,
   LoaderMetrics,
   TemplateSource
-} from './templateLoader'
+} from './TemplateLoader.ts'
+
+import {
+  TemplateLoader,
+  TemplateRegistry,
+  TemplateCache,
+  createDemoLoader,
+  createLibraryLoader
+} from './TemplateLoader.ts'
+
+export type {
+  IBoundaryTracker,
+  IEdgeController,
+  Edge,
+  Event,
+  EdgeZoneInfo,
+  SourceEdgeInfo
+} from './BoundaryTracker'
+
+export {
+  EventEmitter,
+  InternalBoundaryTracker,
+  EdgeController,
+  createTracker
+} from './BoundaryTracker'
 
 export {
   type StateInterface,
@@ -28,14 +52,6 @@ export {
   getStyles,
   pick
 } from './helpers'
-
-import {
-  TemplateLoader,
-  TemplateRegistry,
-  TemplateCache,
-  createDemoLoader,
-  createLibraryLoader
-} from './templateLoader'
 
 let globalTemplateLoader: TemplateLoader
 

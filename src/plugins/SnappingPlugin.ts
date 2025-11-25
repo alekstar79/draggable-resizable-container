@@ -20,12 +20,6 @@ export interface ExtendedContainerManager extends ContainerManagerInterface {
   getSnappingConfig?(): SnappingPluginOptions
 }
 
-export interface ContainerManagerWithSnapping extends ContainerManagerInterface {
-  setSnapStep?(step: number): void
-  setSnappingEnabled?(enabled: boolean): void
-  getSnappingConfig?(): SnappingPluginOptions
-}
-
 /**
  * Reactive state for snapping plugin
  */
@@ -41,6 +35,12 @@ interface SnappingPluginState {
  */
 export class SnappingPlugin implements Plugin
 {
+  private static _pluginId: Symbol = Symbol('SnappingPlugin')
+
+  get pluginId(): Symbol {
+    return SnappingPlugin._pluginId
+  }
+
   // Plugin state
   private reactiveState = reactive<SnappingPluginState>({
     snapStep: 10,
@@ -113,7 +113,7 @@ export class SnappingPlugin implements Plugin
     if (!this.manager || this.manager.getMode() === 'pinned') return
 
     e.preventDefault()
-    this.manager.bringToFront()
+    this.manager.bringToFront?.()
 
     // Update state
     this.reactiveState.isActive = true
@@ -218,7 +218,6 @@ export class SnappingPlugin implements Plugin
    */
   private applySnapping(deltaX: number, deltaY: number): { deltaX: number; deltaY: number }
   {
-    // Use reactive snapStep
     return {
       deltaX: this.snapToGrid(deltaX, this.reactiveState.snapStep),
       deltaY: this.snapToGrid(deltaY, this.reactiveState.snapStep)
@@ -267,14 +266,6 @@ export class SnappingPlugin implements Plugin
         enabled: this.reactiveState.enabled
       }
     }
-  }
-
-  /**
-   * Get current plugin state for debugging
-   */
-  getState(): SnappingPluginState
-  {
-    return { ...this.reactiveState }
   }
 
   /**

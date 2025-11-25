@@ -1015,271 +1015,148 @@ body {
   animation: statsTransition 0.3s ease-out;
 }
 
-
-/* Обновленные стили для Edge Docking - добавить в demo/css/styles.css */
-
-/* Edge wrapper containers */
-.edge-docking-wrapper {
-  position: fixed;
-  background-color: transparent;
-  border: none;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 9998;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Edge Docking System Styles */
+.edge-docked {
+  position: fixed !important;
+  z-index: 1000;
+  transition: all 0.3s ease-out;
+  box-shadow: var(--shadow-lg);
 }
 
-/* Positioning for each edge */
-.edge-docking-wrapper.top-edge {
+/* Top edge docking */
+.edge-docked-top {
   top: 0;
-  left: 0;
-  right: 0;
-  height: auto;
   transform: translateY(calc(-100% + 20px));
+  left: 0;
+  width: 100%;
+  border-top: 3px solid transparent;
 }
 
-.edge-docking-wrapper.bottom-edge {
+.edge-docked-top:hover,
+.edge-docked-top.edge-docked-visible {
+  transform: translateY(10px); /* 10px offset from top edge */
+  border-top-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Bottom edge docking */
+.edge-docked-bottom {
   bottom: 0;
-  left: 0;
-  right: 0;
-  height: auto;
   transform: translateY(calc(100% - 20px));
+  left: 0;
+  width: 100%;
+  border-bottom: 3px solid transparent;
 }
 
-.edge-docking-wrapper.left-edge {
-  top: 0;
+.edge-docked-bottom:hover,
+.edge-docked-bottom.edge-docked-visible {
+  transform: translateY(-10px); /* 10px offset from bottom edge */
+  border-bottom-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Left edge docking */
+.edge-docked-left {
   left: 0;
-  bottom: 0;
-  width: auto;
   transform: translateX(calc(-100% + 20px));
+  top: 0;
+  height: 100%;
+  border-left: 3px solid transparent;
 }
 
-.edge-docking-wrapper.right-edge {
-  top: 0;
+.edge-docked-left:hover,
+.edge-docked-left.edge-docked-visible {
+  transform: translateX(10px); /* 10px offset from left edge */
+  border-left-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Right edge docking */
+.edge-docked-right {
   right: 0;
-  bottom: 0;
-  width: auto;
   transform: translateX(calc(100% - 20px));
-}
-
-/* Highlight zones for edge detection */
-.edge-highlight-zone {
-  position: fixed;
-  background-color: transparent;
-  pointer-events: auto;
-  cursor: default;
-  z-index: 9997;
-  transition: all 0.2s ease;
-  opacity: 0;
-}
-
-.edge-highlight-zone.top-zone {
   top: 0;
-  left: 0;
-  right: 0;
-  height: 30px;
+  height: 100%;
+  border-right: 3px solid transparent;
 }
 
-.edge-highlight-zone.bottom-zone {
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 30px;
+.edge-docked-right:hover,
+.edge-docked-right.edge-docked-visible {
+  transform: translateX(-10px); /* 10px offset from right edge */
+  border-right-color: rgba(59, 130, 246, 0.3);
 }
 
-.edge-highlight-zone.left-zone {
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 30px;
+/* Edge docking hints */
+.edge-dock-hint {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.edge-highlight-zone.right-zone {
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 30px;
+.edge-dock-hint-top {
+  border-top: 3px solid #3b82f6 !important;
+  box-shadow: inset 0 5px 10px -5px rgba(59, 130, 246, 0.3);
 }
 
-/* Docked container styles */
-.edge-docked-container {
-  position: relative !important;
-  margin: 0 !important;
-  transform: none !important;
+.edge-dock-hint-bottom {
+  border-bottom: 3px solid #3b82f6 !important;
+  box-shadow: inset 0 -5px 10px -5px rgba(59, 130, 246, 0.3);
 }
 
-/* Ensure docked containers are properly centered */
-.edge-docking-wrapper.top-edge .edge-docked-container,
-.edge-docking-wrapper.bottom-edge .edge-docked-container {
-  margin: 0 auto;
+.edge-dock-hint-left {
+  border-left: 3px solid #3b82f6 !important;
+  box-shadow: inset 5px 0 10px -5px rgba(59, 130, 246, 0.3);
 }
 
-.edge-docking-wrapper.left-edge .edge-docked-container,
-.edge-docking-wrapper.right-edge .edge-docked-container {
-  margin: auto 0;
+.edge-dock-hint-right {
+  border-right: 3px solid #3b82f6 !important;
+  box-shadow: inset -5px 0 10px -5px rgba(59, 130, 246, 0.3);
 }
 
-/* Visual feedback for docked state */
-.container[data-edge-docked="true"] {
-  border: 2px solid rgba(59, 130, 246, 0.3) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+.edge-dock-blocked {
+  border-color: #ef4444 !important;
+  box-shadow: inset 0 0 10px -2px rgba(239, 68, 68, 0.3) !important;
 }
 
-/* Make sure other UI elements stay on top */
-.demo-controls {
-  z-index: 99;
-}
-
-.stats-panel {
-  z-index: 99;
-}
-
-/* Edge Docking System - Simplified Styles */
-
-.edge-docking-wrapper {
-  position: fixed;
-  background: transparent;
-  border: none;
-  pointer-events: none;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  z-index: 9998;
-}
-
-/* Hidden state with peek */
-.edge-docking-wrapper.top-edge {
-  top: 0;
-  left: 0;
-  right: 0;
-  height: auto;
-  transform: translateY(calc(-100% + 20px));
-}
-
-.edge-docking-wrapper.bottom-edge {
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: auto;
-  transform: translateY(calc(100% - 20px));
-}
-
-.edge-docking-wrapper.left-edge {
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: auto;
-  transform: translateX(calc(-100% + 20px));
-}
-
-.edge-docking-wrapper.right-edge {
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: auto;
-  transform: translateX(calc(100% - 20px));
-}
-
-/* Visible state */
-.edge-docking-wrapper.top-edge.active {
-  transform: translateY(0);
-}
-
-.edge-docking-wrapper.bottom-edge.active {
-  transform: translateY(0);
-}
-
-.edge-docking-wrapper.left-edge.active {
-  transform: translateX(0);
-}
-
-.edge-docking-wrapper.right-edge.active {
-  transform: translateX(0);
-}
-
-/* Docking zones */
-.edge-docking-zone {
-  position: fixed;
-  background: transparent;
-  pointer-events: auto;
-  cursor: default;
-  opacity: 0;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
-  z-index: 9997;
-}
-
-.edge-docking-zone.top-zone {
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 30px;
-}
-
-.edge-docking-zone.bottom-zone {
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 30px;
-}
-
-.edge-docking-zone.left-zone {
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 30px;
-}
-
-.edge-docking-zone.right-zone {
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 30px;
-}
-
-/* Zone hover effects */
-.edge-docking-zone:hover {
-  background: rgba(59, 130, 246, 0.1);
-  opacity: 1;
-}
-
-/* Docked container positioning */
-.edge-docking-wrapper .container {
-  margin: 0 !important;
-  position: absolute !important;
-}
-
-.edge-docking-wrapper.top-edge .container,
-.edge-docking-wrapper.bottom-edge .container {
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-}
-
-.edge-docking-wrapper.left-edge .container,
-.edge-docking-wrapper.right-edge .container {
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-}
-
-.edge-docking-wrapper.top-edge .container {
-  bottom: 0 !important;
-}
-
-.edge-docking-wrapper.bottom-edge .container {
-  top: 0 !important;
-}
-
-.edge-docking-wrapper.left-edge .container {
-  right: 0 !important;
-}
-
-.edge-docking-wrapper.right-edge .container {
-  left: 0 !important;
-}
-
-/* Visual indicators */
+/* Container states for edge docking */
 .container[data-docked="true"] {
-  border: 2px solid rgba(59, 130, 246, 0.3) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  border-style: solid !important;
+  opacity: 0.95;
+}
+
+.container[data-docked="true"]:hover {
+  opacity: 1;
+  box-shadow: var(--shadow-xl);
+}
+
+/* Responsive adjustments for edge-docked containers */
+@media (max-width: 768px) {
+  .edge-docked-top,
+  .edge-docked-bottom {
+    width: 100% !important;
+    left: 0 !important;
+    transform: translateY(calc(-100% + 15px));
+  }
+
+  .edge-docked-top:hover,
+  .edge-docked-top.edge-docked-visible {
+    transform: translateY(5px);
+  }
+
+  .edge-docked-bottom:hover,
+  .edge-docked-bottom.edge-docked-visible {
+    transform: translateY(-5px);
+  }
+
+  .edge-docked-left,
+  .edge-docked-right {
+    height: 50% !important;
+    top: 25% !important;
+    transform: translateX(calc(-100% + 15px));
+  }
+
+  .edge-docked-left:hover,
+  .edge-docked-left.edge-docked-visible {
+    transform: translateX(5px);
+  }
+
+  .edge-docked-right:hover,
+  .edge-docked-right.edge-docked-visible {
+    transform: translateX(-5px);
+  }
 }

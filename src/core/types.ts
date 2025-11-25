@@ -1,6 +1,6 @@
 // src/core/types.ts
 
-import ReactiveEventSystem from "@alekstar79/reactive-event-system";
+import ReactiveEventSystem from "@alekstar79/reactive-event-system"
 
 /**
  * Container movement modes
@@ -76,10 +76,26 @@ export interface ContainerEvent {
   state: ContainerState
   mode: MovementMode
   direction?: ResizeDirection
+  element: HTMLElement
 }
 
 export interface PluginMiddleware {
   (data: any, event: string): any
+}
+
+/**
+ * Base plugin interface that all plugins must implement
+ */
+export interface Plugin {
+  pluginId: Symbol
+
+  /**
+   * Install plugin on container manager instance
+   * @param instance - ContainerManager instance implementing ContainerManagerInterface
+   * @param options - Plugin configuration options
+   */
+  install(instance: ContainerManagerInterface, options?: any): void
+  destroy?(): void
 }
 
 /**
@@ -100,9 +116,9 @@ export interface ContainerManagerInterface {
   directionResolver(x: number, y: number): { clientX: number; clientY: number }
   recalculateForParent(): void
   setBoundaries(boundaries: Partial<Boundaries>): void
-  bringToFront(): void
   getContainer(): HTMLElement
-  destroy(): void
+  bringToFront?(): void
+  destroy?(): void
 
   // Event methods
   on(event: string, callback: (data: ContainerEvent) => void): void
@@ -130,17 +146,4 @@ export interface ContainerManagerInterface {
   getInstalledPlugins(): Plugin[]
 
   [p: string]: any
-}
-
-/**
- * Base plugin interface that all plugins must implement
- */
-export interface Plugin {
-  /**
-   * Install plugin on container manager instance
-   * @param instance - ContainerManager instance implementing ContainerManagerInterface
-   * @param options - Plugin configuration options
-   */
-  install(instance: ContainerManagerInterface, options?: any): void
-  destroy?(): void
 }

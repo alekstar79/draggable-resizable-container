@@ -2,7 +2,7 @@
 
 import { EdgeDockingPlugin, LoggingPlugin, SnappingPlugin, StatePersistencePlugin } from '../plugins'
 import { DemoContainerFactory } from './DemoContainerFactory'
-import { ContainerManager, MovementMode } from '../index'
+import {ContainerManager, MovementMode, Plugin} from '../index'
 
 import {
   type StateInterface,
@@ -99,10 +99,23 @@ class ContainerManagerDemo
     resizeHandler?: () => void
   }> = new Map()
 
-  static async init()
+  static async init(): Promise<ContainerManagerDemo>
   {
     await initializeTemplateSystem()
-    return new ContainerManagerDemo()
+
+    return new Promise((resolve, reject) => {
+      try {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => {
+            resolve(new ContainerManagerDemo())
+          })
+        } else {
+          resolve(new ContainerManagerDemo())
+        }
+      } catch (e) {
+        reject(e)
+      }
+    })
   }
 
   static directionToIconMap()
@@ -588,7 +601,10 @@ class ContainerManagerDemo
       }
     }
 
-    // Use ALL saved properties for restoration
+    // Use the exact saved coordinates.
+    const config = this.demoFactory.getDemoConfig(containerId)
+
+    // Use saved properties with precise positioning
     await this.createContainer({
       x: savedState.x,
       y: savedState.y,
@@ -602,6 +618,7 @@ class ContainerManagerDemo
       useSnapping: savedState.useSnapping,
       containerId,
       parentElement,
+      boundaries: config?.boundaries || savedState.boundaries || {},
       constrainToParent: !!savedState.parentElementId,
       restoreState: true,
       resize: savedState.resize,
@@ -1276,20 +1293,16 @@ class ContainerManagerDemo
       throw new Error('Container ID is required')
     }
 
-    // Set initial position and size from parameters
+    // Set the exact positions and sizes
+    container.style.width = `${params.width}px`
+    container.style.height = `${params.height}px`
+
     if (Reflect.has(params, 'x')) {
       container.style.left = `${params.x}px`
     }
     if (Reflect.has(params, 'y')) {
       container.style.top = `${params.y}px`
     }
-    if (Reflect.has(params, 'width')) {
-      container.style.width = `${params.width}px`
-    }
-    if (Reflect.has(params, 'height')) {
-      container.style.height = `${params.height}px`
-    }
-
     if (params.color) {
       container.style.borderColor = params.color
     }
@@ -1314,9 +1327,9 @@ class ContainerManagerDemo
       document.body.appendChild(container)
     }
 
+    // Creating content after adding it to the DOM
     await this.contentCreator.createContent(params.content, container)
 
-    // Containers without parent constraint should always constrain to viewport
     const shouldConstrainToViewport = params.constrainToViewport ?? !params.constrainToParent
 
     this.state.push(containerId)
@@ -1329,16 +1342,10 @@ class ContainerManagerDemo
     container.dataset.maximized = 'false'
     container.dataset.containerId = containerId
 
-    // Determine if this is a demo container
     const isDemoContainer = params.isDemoContainer || this.demoFactory.isDemoContainer(containerId)
-
-    // Use provided mode or default to global pinned state
     const initialMode = params.mode || (this.isGlobalPinned ? 'pinned' : 'smooth')
-
-    // Use provided direction or default to 'all'
     const initialDirection = params.draggingDirection || 'all'
 
-    // Initialize container manager with all parameters
     const manager = new ContainerManager(container, {
       _uid: containerId,
       mode: initialMode,
@@ -1350,6 +1357,13 @@ class ContainerManagerDemo
       resize: params.resize || { enabled: true, directions: ['se'] }
     }) as ContainerManagerInterface
 
+    manager.setState({
+      x: params.x || 0,
+      y: params.y || 0,
+      width: params.width,
+      height: params.height
+    })
+
     // Install persistence plugin with demo flag
     manager.use(new StatePersistencePlugin(), {
       containerId,
@@ -1359,7 +1373,6 @@ class ContainerManagerDemo
     // Install Edge Docking Plugin
     manager.use(new EdgeDockingPlugin(), {
       containerId,
-      enabled: true,
       edgeThreshold: 30,
       visiblePeek: 20
     })
@@ -2358,7 +2371,7 @@ class ContainerManagerDemo
 
 // (window as any).DEBUG_CONTAINER_MANAGER = true
 
-document.addEventListener('DOMContentLoaded', ContainerManagerDemo.init)
+ContainerManagerDemo.init().catch(console.error)
 
 document.addEventListener('mousemove', (e) => {
   (window as any).lastMouseX = e.clientX;

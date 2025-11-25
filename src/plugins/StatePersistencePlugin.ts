@@ -51,6 +51,12 @@ interface PersistencePluginState {
  */
 export class StatePersistencePlugin implements Plugin
 {
+  private static _pluginId: Symbol = Symbol('StatePersistencePlugin')
+
+  get pluginId(): Symbol {
+    return StatePersistencePlugin._pluginId
+  }
+
   private static readonly STORAGE_KEY = 'containerManagerState'
   private static readonly CLOSED_QUEUE_KEY = 'containerManagerClosedQueue'
   private static readonly DEMO_CONTAINERS_KEY = 'containerManagerDemoContainers'
@@ -150,10 +156,11 @@ export class StatePersistencePlugin implements Plugin
 
     // Effect that triggers on container state changes
     this.autoSaveEffect = effect(() => {
-      // @ts-ignore - Access manager state to create dependency
+      // Access manager state and mode to create dependency
       const state = this.manager!.getState()
-      // @ts-ignore - Access manager mode to create dependency
       const mode = this.manager!.getMode()
+
+      void { state, mode }
 
       // This effect will re-run whenever state or mode changes
       // We use debouncing to avoid too frequent saves
@@ -359,7 +366,7 @@ export class StatePersistencePlugin implements Plugin
       const container = this.manager!.getContainer()
       const isMaximized = container.dataset.maximized === 'true'
 
-      // Get current state
+      // Getting the current state
       const state = this.manager!.getState()
       const mode = this.manager!.getMode()
       const draggingDirection = this.manager!.getDirection()
@@ -408,6 +415,7 @@ export class StatePersistencePlugin implements Plugin
       StatePersistencePlugin.reactiveState.isSaving = false
     })
   }
+
 
   /**
    * Save container state with current manager state before closing
@@ -467,9 +475,6 @@ export class StatePersistencePlugin implements Plugin
       isDemoContainer: true
     }
 
-    // Update the state
-    // StatePersistencePlugin.updateContainerState(containerId, closedState)
-
     // Get ALL current states from localStorage
     const allStates = StatePersistencePlugin.getAllStates()
 
@@ -477,14 +482,11 @@ export class StatePersistencePlugin implements Plugin
     allStates[containerId] = closedState
 
     try {
-      // Save ALL states back to localStorage
+      // Save all states back to localStorage
       localStorage.setItem(
         StatePersistencePlugin.STORAGE_KEY,
         JSON.stringify(allStates)
       )
-
-      // Verify the save
-      // StatePersistencePlugin.getAllStates()
     } catch (error) {
       console.error(`[StatePersistencePlugin] Failed to save to localStorage:`, error)
     }
@@ -636,22 +638,22 @@ export class StatePersistencePlugin implements Plugin
   static updateContainerState(containerId: string, updates: Partial<SavedContainerState>): void
   {
     try {
-      // Получаем текущие состояния из localStorage
+      // Getting the current states from localStorage
       const currentStates = StatePersistencePlugin.getAllStates()
 
-      // Обновляем состояние для конкретного контейнера
+      // Updating the status for a specific container
       const currentState = currentStates[containerId]
       if (currentState) {
         const updatedState = { ...currentState, ...updates }
         currentStates[containerId] = updatedState
 
-        // Сохраняем все состояния в localStorage
+        // Saving all states in localStorage
         localStorage.setItem(
           StatePersistencePlugin.STORAGE_KEY,
           JSON.stringify(currentStates)
         )
 
-        // Также обновляем reactive state для согласованности
+        // Also update the reactive state for consistency
         StatePersistencePlugin.reactiveState.containerStates[containerId] = updatedState
       } else {
         console.warn(`[StatePersistencePlugin] No state found for container ${containerId}, creating new state`)

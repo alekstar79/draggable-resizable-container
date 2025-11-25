@@ -16,29 +16,54 @@ export default defineConfig({
       ]
     }),
     dts({
-      include: ['src'],
-      exclude: ['src/demo/**/*'],
       outDir: 'dist',
+      include: ['src/**/*'],
+      exclude: ['src/demo/**/*', 'src/test/**/*'],
       insertTypesEntry: true
     })
   ],
   build: {
     copyPublicDir: false,
     lib: {
-      entry: {
-        'container-manager': resolve(__dirname, 'src/index.ts'),
-        'plugins': resolve(__dirname, 'src/plugins/index.ts'),
-      },
-      formats: ['es'],
-      name: 'ContainerManager'
+      // entry: {
+      //   'container-manager': resolve(__dirname, 'src/index.ts'),
+      //   'plugins': resolve(__dirname, 'src/plugins/index.ts'),
+      // },
+      entry: resolve(__dirname, 'src/index.ts'),
+      name: 'ContainerManager',
+      formats: ['es', 'umd'],
+      fileName: (format, entryName) => {
+        console.log({  format, entryName })
+        return `index.${format}.js`
+      }
     },
     rollupOptions: {
-      external: ['@alekstar79/reactive-event-system'],
+      external: [
+        '@alekstar79/reactive-event-system',
+        '@alekstar79/reactivity'
+      ],
       output: {
         globals: {
-          '@alekstar79/reactive-event-system': 'ReactiveEventSystem'
+          '@alekstar79/reactive-event-system': 'ReactiveEventSystem',
+          '@alekstar79/reactivity': 'reactivity',
         }
       }
-    }
-  }
+    },
+    sourcemap: true,
+    minify: 'esbuild'
+  },
+  // test: {
+  //   globals: true,
+  //   environment: 'jsdom',
+  //   coverage: {
+  //     provider: 'v8',
+  //     reporter: ['text', 'json', 'html'],
+  //     exclude: [
+  //       'node_modules/',
+  //       'src/demo/',
+  //       'src/test/',
+  //       '**/*.d.ts'
+  //     ]
+  //   }
+  // }
 })

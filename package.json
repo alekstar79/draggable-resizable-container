@@ -5,16 +5,18 @@
   "author": "Aleksey Tarasenko <alekstar79@yandex.ru>",
   "license": "MIT",
   "type": "module",
-  "main": "./dist/container-manager.js",
-  "module": "./dist/container-manager.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.esm.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/container-manager.js",
+      "require": "./dist/index.umd.js",
+      "import": "./dist/index.esm.js",
       "types": "./dist/index.d.ts"
     },
     "./plugins": {
-      "import": "./dist/plugins/index.js",
+      "require": "./dist/plugins/index.umd.js",
+      "import": "./dist/plugins/index.esm.js",
       "types": "./dist/plugins/index.d.ts"
     },
     "./styles": {
@@ -36,6 +38,8 @@
     "prepublishOnly": "yarn build:lib"
   },
   "keywords": [
+    "reactive",
+    "edge-docking",
     "draggable",
     "resizable",
     "container",
@@ -54,17 +58,28 @@
   "homepage": "https://github.com/alekstar79/draggable-resizable-container#readme",
   "devDependencies": {
     "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.47.0",
+    "@typescript-eslint/parser": "^8.47.0",
+    "@vitest/coverage-v8": "^4.0.13",
+    "@vitest/ui": "^4.0.13",
+    "eslint": "^9.39.1",
+    "jsdom": "^27.2.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.8",
     "vite-plugin-dts": "^3.6.4",
     "vite-plugin-generate-file": "^0.3.1",
     "vite-plugin-lib-inject-css": "^2.2.2",
-    "vite-plugin-static-copy": "^3.1.4"
+    "vite-plugin-static-copy": "^3.1.4",
+    "vitest": "^4.0.13"
   },
   "dependencies": {
     "@alekstar79/reactive-event-system": "^1.0.1"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   }
 }

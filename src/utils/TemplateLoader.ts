@@ -14,7 +14,7 @@
  * - Telemetry and logging
  */
 
-export type TemplateSource = string | (() => Promise<string>);
+export type TemplateSource = string | (() => Promise<string>)
 
 export interface TemplateConfig {
   name: string;
@@ -33,7 +33,7 @@ export interface LoaderConfig {
   enableMetrics?: boolean;
   onError?: (error: TemplateLoadError) => void;
   onWarn?: (message: string) => void;
-  fallbackTemplate?: string; // HTML to use in case of error
+  fallbackTemplate?: string;
 }
 
 export interface TemplateLoadError extends Error {

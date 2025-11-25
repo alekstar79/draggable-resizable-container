@@ -1,7 +1,5 @@
 // src/utils/statsManager.ts
-// noinspection JSUnusedGlobalSymbols
 
-import type { ContainerManagerWithSnapping } from '../plugins'
 import type { DirectionMode } from '../core/types'
 
 /**
@@ -31,7 +29,6 @@ export interface GlobalStats {
 export class StatsManager
 {
   private globalStatsElement: HTMLElement | null = null
-  private isShowingContainerStats: boolean = false
 
   /**
    * Initialize stats manager
@@ -48,8 +45,6 @@ export class StatsManager
   {
     if (!this.globalStatsElement) return
 
-    this.isShowingContainerStats = true
-
     this.updateStatsPanel(this.generateContainerStatsHTML(containerStats))
   }
 
@@ -60,17 +55,7 @@ export class StatsManager
   {
     if (!this.globalStatsElement) return
 
-    this.isShowingContainerStats = false
-
     this.updateStatsPanel(this.generateGlobalStatsHTML(globalStats))
-  }
-
-  /**
-   * Check if currently showing container stats
-   */
-  isDisplayingContainerStats(): boolean
-  {
-    return this.isShowingContainerStats
   }
 
   /**
@@ -134,45 +119,6 @@ export class StatsManager
   {
     if (this.globalStatsElement) {
       this.globalStatsElement.innerHTML = html
-    }
-  }
-
-  /**
-   * Get container statistics from manager
-   */
-  static getContainerStats(manager: ContainerManagerWithSnapping, containerId: string): ContainerStats
-  {
-    const mode = manager.getMode()
-    const direction = manager.getDirection()
-    const snappingConfig = manager.getSnappingConfig?.()
-
-    const title = manager.getContainer().dataset.title || containerId
-
-    return {
-      activeBlock: title,
-      lock: mode === 'pinned' ? 'locked' : 'opened',
-      direction: direction,
-      step: snappingConfig?.snapStep,
-      hasSnapping: snappingConfig?.enabled || false
-    }
-  }
-
-  /**
-   * Get global statistics from containers array
-   */
-  static getGlobalStats(containers: any[]): GlobalStats
-  {
-    const isGlobalPinned = containers.some(({ manager }) => manager.getMode() === 'pinned')
-    const typeCount: Record<string, number> = { string: 0, template: 0, element: 0 }
-    containers.forEach(({ type }) => {
-      typeCount[type]++
-    })
-
-    return {
-      containerCount: containers.length,
-      contentTypes: `S:${typeCount.string} T:${typeCount.template} E:${typeCount.element}`,
-      pinnedMode: isGlobalPinned ? 'Enabled' : 'Disabled',
-      snappingCount: containers.filter(c => c.hasSnapping).length
     }
   }
 }

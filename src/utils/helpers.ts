@@ -1,7 +1,7 @@
 // src/utuls/dom.ts
 // noinspection JSUnusedGlobalSymbols
 
-export interface DebouncedCallback<T = any> extends Function {
+export interface CallableFn<T = any> extends Function {
   (...args: T[]): void
 }
 
@@ -506,18 +506,33 @@ export function clickOutside(el: HTMLElement, callback: (e: MouseEvent, el: HTML
 }
 
 /**
- * @param {DebouncedCallback} fn - Debounce function
+ * @param {CallableFn} fn - Debounce function
  * @param {number} ms - timeout period
  */
-export function debounce<T = any>(fn: DebouncedCallback, ms: number = 250): DebouncedCallback
+export function debounce<T = any>(fn: CallableFn, ms: number = 250): CallableFn
 {
   let timeout: number | null = null
-
   return (...args: T[]) => {
     timeout && clearTimeout(timeout)
     timeout = window.setTimeout(() => {
       fn(...args)
     }, ms)
+  }
+}
+
+/**
+ * @param {CallableFn} fn - Throttle function
+ * @param {number} ms - wait period
+ */
+export function throttle<T = any>(fn: CallableFn, ms: number = 250): CallableFn
+{
+  let lastCall = 0
+  return (...args: T[]) => {
+    const now = Date.now()
+    if (now - lastCall >= ms) {
+      lastCall = now
+      fn(...args)
+    }
   }
 }
 

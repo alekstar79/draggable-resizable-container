@@ -15,6 +15,7 @@ export interface DemoContainerConfig {
   template?: string
   useSnapping?: boolean
   description?: string
+  boundaries?: {}
 }
 
 /**

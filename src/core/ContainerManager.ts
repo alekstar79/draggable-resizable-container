@@ -62,9 +62,7 @@ export class ContainerManager implements ContainerManagerInterface
   private constrainedState = computed(() => {
     const state = this.reactiveState
 
-    if (!this.config) {
-      return { ...state }
-    }
+    if (!this.config) return { ...state }
 
     let constrained: ContainerState = { ...state }
 
@@ -110,7 +108,8 @@ export class ContainerManager implements ContainerManagerInterface
     this.eventEmitter?.emit('stateChange', {
       type: 'stateChange',
       state: { ...state },
-      mode: this.reactiveState.mode
+      mode: this.reactiveState.mode,
+      element: this.container
     })
   })
 
@@ -248,13 +247,13 @@ export class ContainerManager implements ContainerManagerInterface
     }
 
     if (needsUpdate) {
-      // Use reactive state update which will automatically apply constraints
       this.setState(newState)
 
       this.eventEmitter.emit('viewportResize', {
         type: 'viewportResize',
         state: this.getState(),
-        mode: this.reactiveState.mode
+        mode: this.reactiveState.mode,
+        element: this.container
       })
     }
   }
@@ -311,13 +310,13 @@ export class ContainerManager implements ContainerManagerInterface
     }
 
     if (needsUpdate) {
-      // Reactive state update
       this.setState(newState)
 
       this.eventEmitter.emit('autoAdjust', {
         type: 'autoAdjust',
         state: this.getState(),
-        mode: this.reactiveState.mode
+        mode: this.reactiveState.mode,
+        element: this.container
       })
     }
   }
@@ -643,11 +642,14 @@ export class ContainerManager implements ContainerManagerInterface
     const rect = this.container.getBoundingClientRect()
     const style = window.getComputedStyle(this.container)
 
+    const styleWidth = parseFloat(style.width) || rect.width
+    const styleHeight = parseFloat(style.height) || rect.height
+
     return {
-      x: parseInt(style.left) || 0,
-      y: parseInt(style.top) || 0,
-      width: rect.width,
-      height: rect.height
+      x: rect.left,
+      y: rect.top,
+      width: styleWidth,
+      height: styleHeight
     }
   }
 
@@ -828,7 +830,8 @@ export class ContainerManager implements ContainerManagerInterface
     this.eventEmitter.emit('dragStart', {
       type: 'drag',
       state: this.getState(),
-      mode: this.reactiveState.mode
+      mode: this.reactiveState.mode,
+      element: this.container
     })
 
     document.addEventListener('mousemove', this.onDragMove)
@@ -859,7 +862,8 @@ export class ContainerManager implements ContainerManagerInterface
     this.eventEmitter.emit('drag', {
       type: 'drag',
       state: this.getState(),
-      mode: this.reactiveState.mode
+      mode: this.reactiveState.mode,
+      element: this.container
     })
   }
 
@@ -878,7 +882,8 @@ export class ContainerManager implements ContainerManagerInterface
     this.eventEmitter.emit('dragEnd', {
       type: 'drag',
       state: this.getState(),
-      mode: this.reactiveState.mode
+      mode: this.reactiveState.mode,
+      element: this.container
     })
   }
 
@@ -910,6 +915,7 @@ export class ContainerManager implements ContainerManagerInterface
       type: 'resize',
       state: this.getState(),
       mode: this.reactiveState.mode,
+      element: this.container,
       direction
     })
   }
@@ -936,7 +942,8 @@ export class ContainerManager implements ContainerManagerInterface
       type: 'resize',
       state: this.getState(),
       mode: this.reactiveState.mode,
-      direction: this.resizeDirection
+      direction: this.resizeDirection,
+      element: this.container
     })
   }
 
@@ -956,7 +963,8 @@ export class ContainerManager implements ContainerManagerInterface
     this.eventEmitter.emit('resizeEnd', {
       type: 'resize',
       state: this.getState(),
-      mode: this.reactiveState.mode
+      mode: this.reactiveState.mode,
+      element: this.container
     })
   }
 
@@ -1013,7 +1021,8 @@ export class ContainerManager implements ContainerManagerInterface
     this.eventEmitter.emit('modeChange', {
       type: 'modeChange',
       state: this.getState(),
-      mode: this.reactiveState.mode
+      mode: this.reactiveState.mode,
+      element: this.container
     })
   }
 
@@ -1046,11 +1055,26 @@ export class ContainerManager implements ContainerManagerInterface
    */
   setState(state: Partial<ContainerState>): void
   {
-    // Update reactive state - constraints will be applied automatically via computed
+    // Update reactive state directly
     if (state.height !== undefined) this.reactiveState.height = state.height
     if (state.width !== undefined) this.reactiveState.width = state.width
     if (state.x !== undefined) this.reactiveState.x = state.x
     if (state.y !== undefined) this.reactiveState.y = state.y
+
+    this.applyStateToDOM()
+  }
+
+  /**
+   * Apply current state to DOM immediately for synchronization
+   */
+  private applyStateToDOM(): void
+  {
+    const state = this.getState()
+
+    this.container.style.left = `${state.x}px`
+    this.container.style.top = `${state.y}px`
+    this.container.style.width = `${state.width}px`
+    this.container.style.height = `${state.height}px`
   }
 
   /**
@@ -1184,7 +1208,8 @@ export class ContainerManager implements ContainerManagerInterface
     this.eventEmitter.emit('parentRecalculated', {
       type: 'parentRecalculated',
       state: this.getState(),
-      mode: this.reactiveState.mode
+      mode: this.reactiveState.mode,
+      element: this.container
     })
   }
 
@@ -1194,9 +1219,7 @@ export class ContainerManager implements ContainerManagerInterface
   use(plugin: Plugin, options?: any): ContainerManagerInterface
   {
     // Prevent duplicate plugin installation
-    if (this.installedPlugins.has(plugin)) {
-      return this
-    }
+    if (this.installedPlugins.has(plugin)) return this
 
     try {
       plugin.install(this, options)

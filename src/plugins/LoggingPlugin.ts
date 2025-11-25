@@ -1,5 +1,4 @@
 // src/plugins/LoggingPlugin.ts
-// noinspection JSUnusedGlobalSymbols
 
 import { ContainerManagerInterface, Plugin, ContainerEvent } from '../core/types'
 import { debounce } from '../utils'
@@ -10,6 +9,12 @@ import { debounce } from '../utils'
  */
 export class LoggingPlugin implements Plugin
 {
+  private static _pluginId: Symbol = Symbol('LoggingPlugin')
+
+  get pluginId(): Symbol {
+    return LoggingPlugin._pluginId
+  }
+
   private manager?: ContainerManagerInterface
   private containerName: string = ''
   private notificationSystem: any = null
