@@ -3,6 +3,7 @@
  */
 
 export { NotificationSystem, defaultNotificationSystem } from './Notifications.ts'
+export { ContainerInitializer } from './ContainerInitializer.ts'
 export { ContentCreator } from './ContentCreator.ts'
 export { StatsManager } from './StatsManager.ts'
 

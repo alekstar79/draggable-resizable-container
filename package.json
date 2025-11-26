@@ -33,6 +33,10 @@
     "dev": "vite",
     "build": "yarn build:lib && vite build --config vite.config.ts",
     "build:lib": "vite build --config vite.lib.config.ts",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "prepublishOnly": "yarn build:lib"

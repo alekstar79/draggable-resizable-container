@@ -25,6 +25,9 @@ import {
  */
 export class ContainerManager implements ContainerManagerInterface
 {
+  private static MINWIDTH: number = 200
+  private static MINHEIGHT: number = 45
+
   // Streams for reactive event handling
   private dragStream: ReturnType<ReactiveEventSystem<ContainerEvent>['stream']>
   private resizeStream: ReturnType<ReactiveEventSystem<ContainerEvent>['stream']>
@@ -70,12 +73,12 @@ export class ContainerManager implements ContainerManagerInterface
     const { boundaries } = this.config
     constrained.width = clamp(
       state.width,
-      boundaries.minWidth || 10,
+      boundaries.minWidth || ContainerManager.MINWIDTH,
       boundaries.maxWidth || Infinity
     )
     constrained.height = clamp(
       state.height,
-      boundaries.minHeight || 10,
+      boundaries.minHeight || ContainerManager.MINHEIGHT,
       boundaries.maxHeight || Infinity
     )
 
@@ -123,10 +126,13 @@ export class ContainerManager implements ContainerManagerInterface
     this.config = deepMerge<ContainerConfig>({
       _uid: '',
       mode: 'smooth',
-      boundaries: { minWidth: 300, minHeight: 45 },
       constrainToViewport: false,
       draggingDirection: 'all',
       constrainToParent: false,
+      boundaries: {
+        minWidth: ContainerManager.MINWIDTH,
+        minHeight: ContainerManager.MINHEIGHT
+      },
       autoAdjust: {
         enabled: false,
         width: false,

@@ -14,7 +14,7 @@ export interface SnappingPluginOptions {
 /**
  * Extended container manager interface with plugin methods
  */
-export interface ExtendedContainerManager extends ContainerManagerInterface {
+export interface SnappingContainerManager extends ContainerManagerInterface {
   setSnapStep?(step: number): void
   setSnappingEnabled?(enabled: boolean): void
   getSnappingConfig?(): SnappingPluginOptions
@@ -49,10 +49,10 @@ export class SnappingPlugin implements Plugin
     lastPosition: null
   })
 
-  private manager?: ContainerManagerInterface
+  private manager!: ContainerManagerInterface & SnappingContainerManager
+  private startState: ContainerState | null = null
   private startX: number = 0
   private startY: number = 0
-  private startState: ContainerState | null = null
 
   constructor(options: SnappingPluginOptions = {})
   {
@@ -69,7 +69,7 @@ export class SnappingPlugin implements Plugin
    */
   install(manager: ContainerManagerInterface, options?: SnappingPluginOptions): void
   {
-    this.manager = manager
+    this.manager = manager as ContainerManagerInterface & SnappingContainerManager
 
     // Update configuration if provided during installation
     if (options) {
@@ -80,7 +80,7 @@ export class SnappingPlugin implements Plugin
     // Override drag handling methods
     this.overrideDragMethods()
     // Add plugin methods to manager for dynamic control
-    this.addPluginMethods(manager)
+    this.addPluginMethods()
   }
 
   /**
@@ -247,20 +247,20 @@ export class SnappingPlugin implements Plugin
   /**
    * Add plugin methods to container manager
    */
-  private addPluginMethods(manager: ExtendedContainerManager): void
+  private addPluginMethods(): void
   {
     // Methods that update reactive state
-    manager.setSnapStep = (step: number): void => {
+    this.manager.setSnapStep = (step: number): void => {
       this.reactiveState.snapStep = step
-      manager.emitPluginEvent('snapStepChanged', { snapStep: step })
+      this.manager.emitPluginEvent('snapStepChanged', { snapStep: step })
     }
 
-    manager.setSnappingEnabled = (enabled: boolean): void => {
+    this.manager.setSnappingEnabled = (enabled: boolean): void => {
       this.reactiveState.enabled = enabled
-      manager.emitPluginEvent('snappingEnabledChanged', { enabled })
+      this.manager.emitPluginEvent('snappingEnabledChanged', { enabled })
     }
 
-    manager.getSnappingConfig = (): SnappingPluginOptions => {
+    this.manager.getSnappingConfig = (): SnappingPluginOptions => {
       return {
         snapStep: this.reactiveState.snapStep,
         enabled: this.reactiveState.enabled

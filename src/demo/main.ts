@@ -1,8 +1,17 @@
 // src/demo/main.ts
 
-import { EdgeDockingPlugin, LoggingPlugin, SnappingPlugin, StatePersistencePlugin } from '../plugins'
 import { DemoContainerFactory } from './DemoContainerFactory'
-import {ContainerManager, MovementMode, Plugin} from '../index'
+import {
+  MovementMode,
+  ContainerManager,
+  ContainerInitializer
+} from '../index'
+import {
+  EdgeDockingPlugin,
+  LoggingPlugin,
+  SnappingPlugin,
+  StatePersistencePlugin
+} from '../plugins'
 
 import {
   type StateInterface,
@@ -766,7 +775,7 @@ class ContainerManagerDemo
       containerId: 'demo-string-container',
       x: 405,
       y: 475,
-      width: 305,
+      width: 310,
       height: 265
     })
 
@@ -782,7 +791,7 @@ class ContainerManagerDemo
       containerId: 'demo-element-container',
       x: 855,
       y: 385,
-      width: 265,
+      width: 300,
       height: 250
     })
 
@@ -790,7 +799,7 @@ class ContainerManagerDemo
       containerId: 'demo-snapping-container',
       x: 750,
       y: 555,
-      width: 285,
+      width: 315,
       height: 240
     })
 
@@ -842,7 +851,10 @@ class ContainerManagerDemo
     const config = this.demoFactory.getDemoConfig('demo-parent-constrained-container')
     if (!config) return
 
-    const content = await this.demoFactory.createDemoContent('demo-parent-constrained-container', config)
+    const content = await this.demoFactory.createDemoContent(
+      'demo-parent-constrained-container',
+      config
+    )
 
     // Create a parent element for demonstration
     const parentElementId = 'parent-demo-parent-constrained-container'
@@ -976,7 +988,10 @@ class ContainerManagerDemo
     const config = this.demoFactory.getDemoConfig(params.containerId!)
     if (!config) return
 
-    const content = await this.demoFactory.createDemoContent(params.containerId!, config)
+    const content = await this.demoFactory.createDemoContent(
+      params.containerId!,
+      config
+    )
 
     await this.createContainer({
       ...params,
@@ -1006,7 +1021,11 @@ class ContainerManagerDemo
     const config = this.demoFactory.getDemoConfig(params.containerId!)
     if (!config) return
 
-    const content = await this.demoFactory.createDemoContent(params.containerId!, config)
+    const content = await this.demoFactory.createDemoContent(
+      params.containerId!,
+      config
+    )
+
     const container = await this.createContainer({
       ...params,
       content,
@@ -1023,7 +1042,11 @@ class ContainerManagerDemo
 
     // Add template info to the container if it's a template container
     if (config.template) {
-      this.demoFactory.addTemplateInfo(container, config.template, config.useSnapping || false)
+      this.demoFactory.addTemplateInfo(
+        container,
+        config.template,
+        config.useSnapping || false
+      )
     }
   }
 
@@ -1040,7 +1063,10 @@ class ContainerManagerDemo
     const config = this.demoFactory.getDemoConfig(params.containerId!)
     if (!config) return
 
-    const content = await this.demoFactory.createDemoContent(params.containerId!, config)
+    const content = await this.demoFactory.createDemoContent(
+      params.containerId!,
+      config
+    )
 
     await this.createContainer({
       ...params,
@@ -1070,7 +1096,10 @@ class ContainerManagerDemo
     const config = this.demoFactory.getDemoConfig(params.containerId!)
     if (!config) return
 
-    const content = await this.demoFactory.createDemoContent(params.containerId!, config)
+    const content = await this.demoFactory.createDemoContent(
+      params.containerId!,
+      config
+    )
 
     await this.createContainer({
       ...params,
@@ -1284,28 +1313,46 @@ class ContainerManagerDemo
    */
   private async createContainer(params: ContainerCreationParams): Promise<HTMLElement>
   {
-    const container = document.createElement('div')
+    // const container = document.createElement('div')
+    const containerId = params.containerId!
+
+    // Create container element
+    const container = ContainerInitializer.createContainerElement(
+      params.width,
+      params.height,
+      params.x,
+      params.y,
+      params.color
+    )
+
     container.className = 'container advanced-container new'
 
+    // Add to DOM first
+    if (params.parentElement) {
+      params.parentElement.appendChild(container)
+    } else {
+      document.body.appendChild(container)
+    }
+
     // Use provided container ID
-    const containerId = params.containerId!
-    if (!params.containerId) {
-      throw new Error('Container ID is required')
-    }
-
-    // Set the exact positions and sizes
-    container.style.width = `${params.width}px`
-    container.style.height = `${params.height}px`
-
-    if (Reflect.has(params, 'x')) {
-      container.style.left = `${params.x}px`
-    }
-    if (Reflect.has(params, 'y')) {
-      container.style.top = `${params.y}px`
-    }
-    if (params.color) {
-      container.style.borderColor = params.color
-    }
+    // const containerId = params.containerId!
+    // if (!params.containerId) {
+    //   throw new Error('Container ID is required')
+    // }
+    //
+    // // Set the exact positions and sizes
+    // container.style.width = `${params.width}px`
+    // container.style.height = `${params.height}px`
+    //
+    // if (Reflect.has(params, 'x')) {
+    //   container.style.left = `${params.x}px`
+    // }
+    // if (Reflect.has(params, 'y')) {
+    //   container.style.top = `${params.y}px`
+    // }
+    // if (params.color) {
+    //   container.style.borderColor = params.color
+    // }
 
     // Create enhanced drag handle
     const {
@@ -1321,16 +1368,14 @@ class ContainerManagerDemo
     container.appendChild(dragHandle)
 
     // Add container to appropriate parent
-    if (params.parentElement) {
-      params.parentElement.appendChild(container)
-    } else {
-      document.body.appendChild(container)
-    }
+    // if (params.parentElement) {
+    //   params.parentElement.appendChild(container)
+    // } else {
+    //   document.body.appendChild(container)
+    // }
 
     // Creating content after adding it to the DOM
     await this.contentCreator.createContent(params.content, container)
-
-    const shouldConstrainToViewport = params.constrainToViewport ?? !params.constrainToParent
 
     this.state.push(containerId)
 
@@ -1342,6 +1387,7 @@ class ContainerManagerDemo
     container.dataset.maximized = 'false'
     container.dataset.containerId = containerId
 
+    const shouldConstrainToViewport = params.constrainToViewport ?? !params.constrainToParent
     const isDemoContainer = params.isDemoContainer || this.demoFactory.isDemoContainer(containerId)
     const initialMode = params.mode || (this.isGlobalPinned ? 'pinned' : 'smooth')
     const initialDirection = params.draggingDirection || 'all'
@@ -1356,6 +1402,17 @@ class ContainerManagerDemo
       autoAdjust: params.autoAdjust || { enabled: false, width: false, height: false },
       resize: params.resize || { enabled: true, directions: ['se'] }
     }) as ContainerManagerInterface
+
+    // await ContainerInitializer.initializeContainer(
+    //   container,
+    //   manager,
+    //   {
+    //     width: params.width,
+    //     height: params.height,
+    //     x: params.x,
+    //     y: params.y
+    //   }
+    // )
 
     manager.setState({
       x: params.x || 0,
@@ -1401,13 +1458,13 @@ class ContainerManagerDemo
     )
 
     this.containers.push({
-      element: container,
-      manager,
-      hasSnapping: params.useSnapping || false,
-      type: params.type,
       _uid: containerId,
       containerId,
-      isDemoContainer
+      element: container,
+      hasSnapping: params.useSnapping || false,
+      type: params.type,
+      isDemoContainer,
+      manager
     })
 
     // Setup hover handlers

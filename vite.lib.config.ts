@@ -51,19 +51,5 @@ export default defineConfig({
     },
     sourcemap: true,
     minify: 'esbuild'
-  },
-  // test: {
-  //   globals: true,
-  //   environment: 'jsdom',
-  //   coverage: {
-  //     provider: 'v8',
-  //     reporter: ['text', 'json', 'html'],
-  //     exclude: [
-  //       'node_modules/',
-  //       'src/demo/',
-  //       'src/test/',
-  //       '**/*.d.ts'
-  //     ]
-  //   }
-  // }
+  }
 })

@@ -19,6 +19,7 @@ export type {
 // Export content creation utilities
 export {
   type StateInterface,
+  ContainerInitializer,
   TemplateLoader,
   ContentCreator
 } from './utils'
@@ -34,7 +35,7 @@ export {
   getViewportDimensions,
   mapFromObject,
   isInViewport
-} from './utils/helpers.ts'
+} from './utils/helpers'
 
 export type { TemplateConfig } from './utils/TemplateLoader.ts'
 
